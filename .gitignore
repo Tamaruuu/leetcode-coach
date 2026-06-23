@@ -1,0 +1,22 @@
+# Python 虚拟环境(几百M的第三方库,绝不上传)
+.venv/
+venv/
+
+# Python 缓存和编译产物
+__pycache__/
+*.pyc
+*.pyo
+
+# 本地数据库(你的刷题记录,属于个人数据,不进版本库)
+*.db
+*.sqlite
+*.sqlite3
+
+# 密钥/环境变量(以后万一加 API key,防泄露)
+.env
+
+# Mac 系统垃圾文件
+.DS_Store
+
+# 日志
+*.log
