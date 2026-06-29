@@ -16,36 +16,30 @@ import subprocess
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# 定位 CLI
+# 定位 CLI（跨机器：不写死具体用户路径，靠环境变量 + PATH + glob 探测）
 # ---------------------------------------------------------------------------
-# 优先用环境变量覆盖；否则从 nvm/npm 全局目录推导；最后兜底 PATH 里的 node。
-_DEFAULT_CLI = (
-    "/Users/tamaru/.nvm/versions/node/v20.20.2/lib/node_modules/"
-    "@tencent/claude-code-internal/dist/claude-code-internal.js"
+# 若本机装了 claude-code-internal 就能用 AI 教练；没装则优雅降级（页面提示暂不可用），
+# 不影响复习/题库/弱点等其它功能。换电脑迁移时这段无需改动。
+_CLI_GLOB = "**/claude-code-internal/dist/claude-code-internal.js"
+_SEARCH_BASES = (
+    Path.home() / ".nvm/versions",                 # nvm 安装的 node
+    Path("/usr/local/lib/node_modules"),           # npm 全局（Intel mac / Linux）
+    Path("/opt/homebrew/lib/node_modules"),         # npm 全局（Apple Silicon）
 )
 
 
 def _find_node():
-    return (
-        os.environ.get("COACH_NODE")
-        or shutil.which("node")
-        or "/Users/tamaru/.nvm/versions/node/v20.20.2/bin/node"
-    )
+    return os.environ.get("COACH_NODE") or shutil.which("node")
 
 
 def _find_cli():
     """返回 claude CLI 的 js 入口路径，找不到返回 None。"""
-    cand = os.environ.get("COACH_CLAUDE_CLI") or _DEFAULT_CLI
+    cand = os.environ.get("COACH_CLAUDE_CLI")
     if cand and Path(cand).exists():
         return cand
-    # 兜底：从任意 node_modules 全局目录里搜
-    for base in (
-        Path.home() / ".nvm/versions",
-        Path("/usr/local/lib/node_modules"),
-        Path("/opt/homebrew/lib/node_modules"),
-    ):
+    for base in _SEARCH_BASES:
         if base.exists():
-            hits = list(base.glob("**/claude-code-internal/dist/claude-code-internal.js"))
+            hits = list(base.glob(_CLI_GLOB))
             if hits:
                 return str(hits[0])
     return None
@@ -59,11 +53,12 @@ def available():
     """(可用?, 说明)。界面据此决定是否禁用输入框。"""
     if CLAUDE_CLI is None:
         return False, (
-            "没找到本机 Claude CLI。可设置环境变量 "
-            "`COACH_CLAUDE_CLI` 指向 claude-code-internal.js 后重启。"
+            "本机没装 Claude CLI（claude-code-internal），AI 教练暂不可用。"
+            "装好后设环境变量 `COACH_CLAUDE_CLI` 指向其 claude-code-internal.js "
+            "再重启即可；其它功能不受影响。"
         )
-    if not Path(NODE).exists():
-        return False, "没找到 node 运行时（可设置 `COACH_NODE`）。"
+    if not NODE:
+        return False, "没找到 node 运行时（装 node 或设环境变量 `COACH_NODE`）。"
     return True, "已就绪"
 
 

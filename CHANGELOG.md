@@ -47,6 +47,19 @@
 - 新增 `.streamlit/config.toml`，把端口固定为 **8600**（避开默认 8501 偶尔被
   残留进程占用导致启动失败的问题）。要换端口改这个文件里的数字即可。
 
+---
+
+## 2026-06-29 — 跨电脑迁移支持
+
+为了把项目迁到另一台电脑，做了以下改动：
+- **`coach.py` 路径通用化**：删掉写死的本机 CLI 路径，改为「环境变量 `COACH_CLAUDE_CLI`
+  → PATH → nvm/npm 全局目录 glob」三级探测。新机没装 claude-code-internal 时
+  AI 教练页优雅提示「暂不可用」，复习/题库/弱点等功能照常。
+- **新增 `requirements.txt`**：streamlit==1.50.0, pandas==2.3.3（其余均标准库）。
+- **新增 `setup.sh`**：新机一键重建 .venv + 装依赖。
+- **打包约定**：迁移用 tar 包**不含** `.venv`（macOS 专属二进制，换机必废）和
+  `leetcode.db`（个人数据）。新机流程：解压 → `./setup.sh` → `./start.sh`。
+
 ### 已知限制 / 二期可做
 - 非流式：点完等几秒一次性出结果（spinner 占位）。流式需用
   `--output-format stream-json` 增量解析。
